@@ -127,7 +127,7 @@ With 36GB you could even fine-tune Gemma 3 **1B** or **4B** if the 270M ends up 
 ### Pipeline
 
 1. **Seed set (manual):** Hand-write 50–100 diverse examples covering the coverage matrix below. A starter set lives in `data/seed/seed_examples.jsonl` (extend it).
-2. **Synthetic expansion:** `python scripts/generate_synthetic.py --out data/synthetic/raw.jsonl --per-category 50` (requires `ANTHROPIC_API_KEY`).
+2. **Synthetic expansion:** `python scripts/generate_synthetic.py --out data/synthetic/raw.jsonl --per-category 50` (shells out to the `claude` CLI — uses your existing Claude Code auth; add `--batches-per-category N` to scale volume).
 3. **Human review:** Hand-check every synthetic example — bad labels poison training.
 4. **Build splits:** `python scripts/build_dataset.py --sources data/seed/seed_examples.jsonl data/synthetic/raw.jsonl` deduplicates, stratifies by category, and writes `data/{train,valid,test}.jsonl` in mlx-lm format with the Gemma chat template already applied.
 

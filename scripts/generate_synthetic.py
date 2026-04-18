@@ -1,13 +1,15 @@
-"""Generate synthetic expense examples with Claude.
+"""Generate synthetic expense examples with the Claude CLI.
 
-Requires ANTHROPIC_API_KEY. Outputs raw JSONL matching seed_examples.jsonl format
+Shells out to `claude -p` per batch. Uses your existing Claude Code auth —
+no ANTHROPIC_API_KEY required. Output is raw JSONL matching seed_examples.jsonl
 (fields: input, output). Every line MUST be hand-reviewed before training.
 """
 from __future__ import annotations
 
 import argparse
 import json
-import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -17,7 +19,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from expense_parser.schema import Category, Expense  # noqa: E402
 
 
-GEN_SYSTEM = """You generate training examples for an expense-parsing model.
+GEN_INSTRUCTIONS = """You generate training examples for an expense-parsing model.
 Produce diverse, realistic one-line user utterances and their structured JSON.
 
 Output format: one example per line, each a JSON object:
@@ -30,15 +32,17 @@ Rules:
 - Amount may be null when the user is vague (e.g. "a couple bucks")
 - Vary phrasing heavily: terse, conversational, past/present, abbreviated, misspelled merchants
 - Cover: named + unnamed merchants, multi-currency, dates (today/yesterday/last Tuesday/ISO/none), refunds (negative), multi-item, splits, tips
-- No duplicates, no numbering, no explanations outside the JSON
+- No duplicates, no numbering, no markdown fences, no explanations outside the JSON
+- Output ONLY the JSONL, one record per line.
 """
 
 
-def _build_user_prompt(category: str, n: int) -> str:
+def _build_prompt(category: str, n: int) -> str:
     return (
-        f"Generate {n} diverse expense examples, biased toward the '{category}' "
-        f"category but include occasional others to avoid narrow distributions. "
-        f"Use the JSONL format from the system instructions. Output only JSONL."
+        f"{GEN_INSTRUCTIONS}\n\n"
+        f"Generate {n} diverse expense examples, biased toward the "
+        f"'{category}' category but include occasional others to avoid narrow "
+        f"distributions. Output ONLY JSONL — one record per line."
     )
 
 
@@ -59,18 +63,27 @@ def _validate_line(line: str) -> dict | None:
     return rec
 
 
-def generate(category: Category, n: int, model: str) -> list[dict]:
-    from anthropic import Anthropic
-
-    client = Anthropic()
-    msg = client.messages.create(
-        model=model,
-        max_tokens=4096,
-        system=GEN_SYSTEM,
-        messages=[{"role": "user", "content": _build_user_prompt(category.value, n)}],
+def _run_claude(prompt: str, model: str | None, timeout: int) -> str:
+    cmd = ["claude", "-p", prompt]
+    if model:
+        cmd.extend(["--model", model])
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
     )
-    text = "".join(block.text for block in msg.content if block.type == "text")
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"claude CLI exited {result.returncode}: {result.stderr.strip()[:500]}"
+        )
+    return result.stdout
 
+
+def generate(category: Category, n: int, model: str | None, timeout: int) -> list[dict]:
+    prompt = _build_prompt(category.value, n)
+    text = _run_claude(prompt, model, timeout)
     results: list[dict] = []
     for line in text.splitlines():
         rec = _validate_line(line)
@@ -83,13 +96,17 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", required=True, help="Output JSONL path")
     ap.add_argument("--per-category", type=int, default=50,
-                    help="Examples requested per category")
-    ap.add_argument("--model", default="claude-opus-4-7",
-                    help="Anthropic model id")
+                    help="Examples requested per category per batch")
+    ap.add_argument("--batches-per-category", type=int, default=1,
+                    help="Run multiple batches per category to reach higher volume")
+    ap.add_argument("--model", default=None,
+                    help="Optional model override passed to `claude --model`")
+    ap.add_argument("--timeout", type=int, default=600,
+                    help="Per-batch timeout in seconds")
     args = ap.parse_args()
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("ANTHROPIC_API_KEY is not set", file=sys.stderr)
+    if shutil.which("claude") is None:
+        print("claude CLI not found on PATH", file=sys.stderr)
         return 1
 
     out_path = Path(args.out)
@@ -98,12 +115,18 @@ def main() -> int:
     total = 0
     with out_path.open("w") as f:
         for cat in Category:
-            print(f"Generating {args.per_category} for {cat.value}...", file=sys.stderr)
-            records = generate(cat, args.per_category, args.model)
-            for rec in records:
-                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-            total += len(records)
-            print(f"  kept {len(records)}", file=sys.stderr)
+            for batch in range(args.batches_per_category):
+                label = f"{cat.value} (batch {batch + 1}/{args.batches_per_category})"
+                print(f"Generating {args.per_category} for {label}...", file=sys.stderr)
+                try:
+                    records = generate(cat, args.per_category, args.model, args.timeout)
+                except (subprocess.TimeoutExpired, RuntimeError) as e:
+                    print(f"  skipped: {e}", file=sys.stderr)
+                    continue
+                for rec in records:
+                    f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                total += len(records)
+                print(f"  kept {len(records)}", file=sys.stderr)
 
     print(f"Wrote {total} validated examples to {out_path}", file=sys.stderr)
     print("Hand-review every line before adding to training data.", file=sys.stderr)
