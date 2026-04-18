@@ -3,23 +3,42 @@ import SwiftUI
 
 @MainActor
 final class ExpenseViewModel: ObservableObject {
+    enum LoadState: Equatable {
+        case idle
+        case loading
+        case loaded
+        case failed(String)
+    }
+
     @Published var input: String = ""
     @Published var expense: Expense?
     @Published var rawOutput: String = ""
-    @Published var isLoading: Bool = false
+    @Published var isParsing: Bool = false
     @Published var errorMessage: String?
+    @Published var loadState: LoadState = .idle
 
     private let inference = ExpenseInference()
+
+    func preload() async {
+        if loadState == .loading || loadState == .loaded { return }
+        loadState = .loading
+        do {
+            try await inference.ensureLoaded()
+            loadState = .loaded
+        } catch {
+            loadState = .failed(error.localizedDescription)
+        }
+    }
 
     func parse() async {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
-        isLoading = true
+        isParsing = true
         errorMessage = nil
         expense = nil
         rawOutput = ""
-        defer { isLoading = false }
+        defer { isParsing = false }
 
         do {
             let (parsed, raw) = try await inference.parse(text)
@@ -28,10 +47,8 @@ final class ExpenseViewModel: ObservableObject {
             if parsed == nil {
                 errorMessage = "Model output did not parse as valid JSON."
             }
-        } catch ExpenseInference.InferenceError.modelBundleMissing {
-            errorMessage = "Model bundle not found. Add gemma3-270m-expense-merged to the app target as a folder reference."
         } catch {
-            errorMessage = "Inference failed: \(error.localizedDescription)"
+            errorMessage = error.localizedDescription
         }
     }
 }
@@ -43,8 +60,9 @@ struct ContentView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    loadStateCard
                     inputCard
-                    if vm.isLoading {
+                    if vm.isParsing {
                         HStack(spacing: 8) {
                             ProgressView()
                             Text("Parsing on device...")
@@ -69,6 +87,42 @@ struct ContentView: View {
             }
             .navigationTitle("Expense Parser")
         }
+        .task { await vm.preload() }
+    }
+
+    @ViewBuilder
+    private var loadStateCard: some View {
+        switch vm.loadState {
+        case .idle, .loading:
+            HStack(spacing: 8) {
+                ProgressView()
+                Text("Loading model on device...")
+                    .foregroundStyle(.secondary)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+        case .loaded:
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.seal.fill")
+                    .foregroundStyle(.green)
+                Text("Model loaded")
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 4)
+        case .failed(let message):
+            VStack(alignment: .leading, spacing: 6) {
+                Label("Model failed to load", systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                    .font(.headline)
+                Text(message)
+                    .font(.system(.footnote, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+        }
     }
 
     private var inputCard: some View {
@@ -87,10 +141,17 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(vm.isLoading || vm.input.trimmingCharacters(in: .whitespaces).isEmpty)
+            .disabled(parseDisabled)
         }
         .padding()
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var parseDisabled: Bool {
+        if vm.isParsing { return true }
+        if vm.input.trimmingCharacters(in: .whitespaces).isEmpty { return true }
+        if case .failed = vm.loadState { return true }
+        return false
     }
 
     private func resultCard(_ e: Expense) -> some View {
