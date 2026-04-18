@@ -29,10 +29,7 @@ data/synthetic/
 .env.*
 !.env.example
 
-# Xcode
-ios/**/*.xcodeproj/project.xcworkspace/xcuserdata/
-ios/**/*.xcodeproj/xcuserdata/
-ios/**/DerivedData/
-ios/**/.build/
-ios/**/*.xcuserstate
-ios/**/xcshareddata/WorkspaceSettings.xcsettings
+# Xcode — the generated project lives at ios/ExpenseParser/ and is not tracked.
+# Sources are under ios/ExpenseParserSources/ and get referenced from the
+# generated project.
+ios/ExpenseParser/
