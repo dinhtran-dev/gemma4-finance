@@ -55,6 +55,7 @@ final class ExpenseViewModel: ObservableObject {
 
 struct ContentView: View {
     @EnvironmentObject var vm: ExpenseViewModel
+    @StateObject private var transcriber = SpeechTranscriber()
 
     var body: some View {
         NavigationStack {
@@ -79,6 +80,12 @@ struct ContentView: View {
                             .foregroundStyle(.red)
                             .padding(.horizontal, 4)
                     }
+                    if let msg = transcriber.errorMessage {
+                        Text(msg)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                            .padding(.horizontal, 4)
+                    }
                     if !vm.rawOutput.isEmpty {
                         rawCard
                     }
@@ -88,6 +95,9 @@ struct ContentView: View {
             .navigationTitle("Expense Parser")
         }
         .task { await vm.preload() }
+        .onChange(of: transcriber.transcript) { _, newValue in
+            vm.input = newValue
+        }
     }
 
     @ViewBuilder
@@ -126,14 +136,19 @@ struct ContentView: View {
     }
 
     private var inputCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Describe an expense")
+        VStack(spacing: 16) {
+            Text(transcriber.isRecording ? "Listening…" : "Tap the mic and describe an expense")
                 .font(.headline)
-            TextField("e.g. grabbed lunch at Chipotle for $14", text: $vm.input, axis: .vertical)
+                .foregroundStyle(.primary)
+
+            micButton
+
+            TextField("e.g. grabbed lunch at Chipotle for $14",
+                      text: $vm.input, axis: .vertical)
                 .lineLimit(2...5)
                 .textFieldStyle(.roundedBorder)
-                .submitLabel(.send)
-                .onSubmit { Task { await vm.parse() } }
+                .disabled(transcriber.isRecording)
+
             Button {
                 Task { await vm.parse() }
             } label: {
@@ -144,11 +159,32 @@ struct ContentView: View {
             .disabled(parseDisabled)
         }
         .padding()
+        .frame(maxWidth: .infinity)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var micButton: some View {
+        Button {
+            Task { await transcriber.toggle() }
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(transcriber.isRecording ? Color.red : Color.accentColor)
+                    .frame(width: 96, height: 96)
+                    .shadow(radius: transcriber.isRecording ? 8 : 2)
+                Image(systemName: transcriber.isRecording ? "stop.fill" : "mic.fill")
+                    .foregroundStyle(.white)
+                    .font(.system(size: 36, weight: .semibold))
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(transcriber.isRecording ? "Stop recording" : "Start recording")
+        .disabled(vm.isParsing)
     }
 
     private var parseDisabled: Bool {
         if vm.isParsing { return true }
+        if transcriber.isRecording { return true }
         if vm.input.trimmingCharacters(in: .whitespaces).isEmpty { return true }
         if case .failed = vm.loadState { return true }
         return false

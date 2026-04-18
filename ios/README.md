@@ -79,15 +79,38 @@ as `config.json` and `model.safetensors` end up in the bundle.
 > and copy that instead. The model directory inside
 > `ios/ExpenseParser/ExpenseParser/` is gitignored.
 
-## 4. Capabilities & Info.plist
+## 4. Permissions (speech + microphone)
 
-No special entitlements needed. If Xcode complains about bitcode or the binary
+The app records short voice descriptions and transcribes them on-device.
+You need to declare microphone + speech recognition usage or iOS will kill
+the app on first recording attempt.
+
+In Xcode: **target → General → Info → Custom iOS Target Properties**, add:
+
+| Key                                    | Value                                                |
+|----------------------------------------|------------------------------------------------------|
+| `NSMicrophoneUsageDescription`         | `ExpenseParser uses the microphone to record your spoken expense descriptions.` |
+| `NSSpeechRecognitionUsageDescription`  | `ExpenseParser uses on-device speech recognition to turn your spoken expense into text.` |
+
+(Or under **Build Settings**, set `INFOPLIST_KEY_NSMicrophoneUsageDescription`
+and `INFOPLIST_KEY_NSSpeechRecognitionUsageDescription` to the same strings —
+same effect.)
+
+`SpeechTranscriber.beginRecording()` sets `requiresOnDeviceRecognition =
+supportsOnDeviceRecognition`, so modern iPhones never send audio to Apple's
+servers; devices without on-device support fall back to cloud recognition.
+
+## 5. Capabilities & Info.plist
+
+No other entitlements needed. If Xcode complains about bitcode or the binary
 size, set **Build Settings → Enable Bitcode = No** (default in modern Xcode).
 
-## 5. Run
+## 6. Run
 
 - Select your iPhone as the run destination, plug it in, Cmd-R.
 - First launch takes a few seconds to load the model into GPU memory.
+- Tap the big mic button to start dictation; tap again to stop. The live
+  transcript streams into the text field; edit if needed, then tap **Parse**.
 - Subsequent inferences should be well under 200 ms on an A17/M-class chip.
 
 ## File layout
@@ -103,7 +126,8 @@ ios/
         ├── Model/
         │   ├── Expense.swift                # Codable struct + Category enum + JSON extractor
         │   ├── PromptTemplate.swift         # Gemma chat-template builder (mirrors prompt.py)
-        │   └── ExpenseInference.swift       # MLX-Swift inference actor
+        │   ├── ExpenseInference.swift       # MLX-Swift inference actor
+        │   └── SpeechTranscriber.swift      # SFSpeechRecognizer live dictation
         └── gemma3-270m-expense-merged/      # gitignored — bundled at build time
 ```
 
