@@ -37,17 +37,35 @@ actor ExpenseInference {
     func ensureLoaded() async throws {
         if container != nil { return }
 
-        guard let url = Bundle.main.url(forResource: bundleDirName, withExtension: nil) else {
-            throw InferenceError.modelBundleMissing(
-                searched: bundleDirName,
-                listing: Self.listBundle()
-            )
-        }
+        let url = try Self.resolveModelURL(bundleDirName: bundleDirName)
 
         MLX.GPU.set(cacheLimit: 32 * 1024 * 1024)
 
         let configuration = ModelConfiguration(directory: url)
         container = try await LLMModelFactory.shared.loadContainer(configuration: configuration)
+    }
+
+    /// Finds the model directory in the app bundle. Accepts either layout:
+    /// - Folder reference: `<bundle>/<bundleDirName>/{config.json, ...}`
+    /// - Flattened (Xcode synchronized group): `<bundle>/{config.json, ...}`
+    nonisolated private static func resolveModelURL(bundleDirName: String) throws -> URL {
+        if let url = Bundle.main.url(forResource: bundleDirName, withExtension: nil) {
+            return url
+        }
+        if let root = Bundle.main.resourceURL, isModelDirectory(root) {
+            return root
+        }
+        throw InferenceError.modelBundleMissing(
+            searched: bundleDirName,
+            listing: listBundle()
+        )
+    }
+
+    nonisolated private static func isModelDirectory(_ url: URL) -> Bool {
+        let fm = FileManager.default
+        let config = url.appendingPathComponent("config.json").path
+        let weights = url.appendingPathComponent("model.safetensors").path
+        return fm.fileExists(atPath: config) && fm.fileExists(atPath: weights)
     }
 
     /// Runs greedy decoding and returns the raw model output.
