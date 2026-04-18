@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 @main
@@ -9,5 +10,6 @@ struct ExpenseParserApp: App {
             ContentView()
                 .environmentObject(viewModel)
         }
+        .modelContainer(for: ExpenseRecord.self)
     }
 }

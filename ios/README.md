@@ -111,7 +111,26 @@ size, set **Build Settings → Enable Bitcode = No** (default in modern Xcode).
 - First launch takes a few seconds to load the model into GPU memory.
 - Tap the big mic button to start dictation; tap again to stop. The live
   transcript streams into the text field; edit if needed, then tap **Parse**.
+- Every successful parse is persisted. Tap the clock icon in the top-right to
+  open the history list; swipe a row to delete.
 - Subsequent inferences should be well under 200 ms on an A17/M-class chip.
+
+## Storage
+
+Parsed expenses go into a SQLite database via SwiftData. On device the file
+lives under the app's sandbox at:
+
+```
+Library/Application Support/default.store
+```
+
+(plus `.store-shm` / `.store-wal` journal files). Each row captures:
+
+- `createdAt` — timestamp of when the parse was saved
+- `amount`, `currency`, `categoryRaw`, `merchant`, `descriptionText`
+- `dateText` — the natural-language date the user spoke ("yesterday")
+- `rawInput` / `rawOutput` — the original utterance and the model's reply,
+  for later re-training or error analysis
 
 ## File layout
 
@@ -123,10 +142,12 @@ ios/
     └── ExpenseParser/                       # tracked Swift sources
         ├── ExpenseParserApp.swift           # @main entry
         ├── ContentView.swift                # SwiftUI view + view-model
+        ├── HistoryView.swift                # SwiftData-backed list of saved expenses
         ├── Model/
         │   ├── Expense.swift                # Codable struct + Category enum + JSON extractor
         │   ├── PromptTemplate.swift         # Gemma chat-template builder (mirrors prompt.py)
         │   ├── ExpenseInference.swift       # MLX-Swift inference actor
+        │   ├── ExpenseRecord.swift          # @Model — SwiftData/SQLite persistence
         │   └── SpeechTranscriber.swift      # SFSpeechRecognizer live dictation
         └── gemma3-270m-expense-merged/      # gitignored — bundled at build time
 ```

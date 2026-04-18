@@ -1,4 +1,5 @@
 import Combine
+import SwiftData
 import SwiftUI
 
 @MainActor
@@ -16,8 +17,14 @@ final class ExpenseViewModel: ObservableObject {
     @Published var isParsing: Bool = false
     @Published var errorMessage: String?
     @Published var loadState: LoadState = .idle
+    @Published var lastSavedAt: Date?
 
     private let inference = ExpenseInference()
+    private var modelContext: ModelContext?
+
+    func attach(modelContext: ModelContext) {
+        self.modelContext = modelContext
+    }
 
     func preload() async {
         if loadState == .loading || loadState == .loaded { return }
@@ -44,16 +51,31 @@ final class ExpenseViewModel: ObservableObject {
             let (parsed, raw) = try await inference.parse(text)
             self.rawOutput = raw
             self.expense = parsed
-            if parsed == nil {
+            if let parsed {
+                persist(parsed, rawInput: text, rawOutput: raw)
+            } else {
                 errorMessage = "Model output did not parse as valid JSON."
             }
         } catch {
             errorMessage = error.localizedDescription
         }
     }
+
+    private func persist(_ e: Expense, rawInput: String, rawOutput: String) {
+        guard let modelContext else { return }
+        let record = ExpenseRecord(expense: e, rawInput: rawInput, rawOutput: rawOutput)
+        modelContext.insert(record)
+        do {
+            try modelContext.save()
+            lastSavedAt = record.createdAt
+        } catch {
+            errorMessage = "Saved to memory but failed to write to SQLite: \(error.localizedDescription)"
+        }
+    }
 }
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var vm: ExpenseViewModel
     @StateObject private var transcriber = SpeechTranscriber()
 
@@ -93,8 +115,21 @@ struct ContentView: View {
                 .padding()
             }
             .navigationTitle("Expense Parser")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        HistoryView()
+                    } label: {
+                        Image(systemName: "clock.arrow.circlepath")
+                    }
+                    .accessibilityLabel("History")
+                }
+            }
         }
-        .task { await vm.preload() }
+        .task {
+            vm.attach(modelContext: modelContext)
+            await vm.preload()
+        }
         .onChange(of: transcriber.transcript) { _, newValue in
             vm.input = newValue
         }
@@ -192,8 +227,17 @@ struct ContentView: View {
 
     private func resultCard(_ e: Expense) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Parsed")
-                .font(.headline)
+            HStack {
+                Text("Parsed")
+                    .font(.headline)
+                Spacer()
+                if vm.lastSavedAt != nil {
+                    Label("Saved", systemImage: "checkmark.circle.fill")
+                        .labelStyle(.titleAndIcon)
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                }
+            }
             row("Amount", e.amount.map { String(format: "%.2f", $0) } ?? "—")
             row("Currency", e.currency ?? "—")
             row("Category", e.category?.display ?? "—")
@@ -232,5 +276,7 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView().environmentObject(ExpenseViewModel())
+    ContentView()
+        .environmentObject(ExpenseViewModel())
+        .modelContainer(for: ExpenseRecord.self, inMemory: true)
 }
