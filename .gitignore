@@ -29,7 +29,13 @@ data/synthetic/
 .env.*
 !.env.example
 
-# Xcode — the generated project lives at ios/ExpenseParser/ and is not tracked.
-# Sources are under ios/ExpenseParserSources/ and get referenced from the
-# generated project.
-ios/ExpenseParser/
+# Xcode — track Swift sources under ios/ExpenseParser/ExpenseParser/ but
+# keep the generated project, build output, and user state out of git.
+ios/ExpenseParser/*.xcodeproj/
+ios/ExpenseParser/*.xcworkspace/
+ios/ExpenseParser/build/
+ios/ExpenseParser/DerivedData/
+**/xcuserdata/
+**/*.xcuserstate
+# Bundled model (too big for git; produced locally by mlx_lm.fuse)
+ios/ExpenseParser/ExpenseParser/gemma3-270m-expense-merged/
