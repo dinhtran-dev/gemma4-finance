@@ -82,7 +82,7 @@ def evaluate(model_path: str, adapter_path: str, data_dir: str, limit: int) -> d
 
     for user_text, target in records:
         prompt = format_inference_prompt(user_text)
-        raw = generate(model, tokenizer, prompt=prompt, max_tokens=200, temp=0.0, verbose=False)
+        raw = generate(model, tokenizer, prompt=prompt, max_tokens=200, verbose=False)
         payload = _extract_json(raw)
 
         parsed_valid = False

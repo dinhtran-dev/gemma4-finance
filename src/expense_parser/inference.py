@@ -37,7 +37,6 @@ class ExpenseParser:
         model_path: str = "google/gemma-3-270m",
         adapter_path: Optional[str] = None,
         max_tokens: int = 200,
-        temperature: float = 0.0,
     ) -> None:
         from mlx_lm import load  # imported lazily so non-MLX machines can still import the module
 
@@ -46,7 +45,6 @@ class ExpenseParser:
             adapter_path=adapter_path if adapter_path and Path(adapter_path).exists() else None,
         )
         self._max_tokens = max_tokens
-        self._temperature = temperature
 
     def _generate(self, prompt: str) -> str:
         from mlx_lm import generate
@@ -56,7 +54,6 @@ class ExpenseParser:
             self._tokenizer,
             prompt=prompt,
             max_tokens=self._max_tokens,
-            temp=self._temperature,
             verbose=False,
         )
 
