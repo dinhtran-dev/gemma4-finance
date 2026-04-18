@@ -59,12 +59,18 @@ gemma4-finance/
 │   ├── fallback.py                 # Regex/heuristic parser (used when model output is invalid)
 │   └── inference.py                # MLX inference wrapper with schema validation
 ├── scripts/
-│   ├── generate_synthetic.py       # Claude-backed synthetic expansion
+│   ├── generate_synthetic.py       # Claude-CLI-backed synthetic expansion
 │   ├── build_dataset.py            # Dedup, stratified split, Gemma-format JSONL
 │   ├── train.py                    # LoRA fine-tune via mlx-lm tuner
 │   ├── evaluate.py                 # JSON validity, exact-match, per-field F1, amount MAE
 │   └── predict.py                  # One-shot CLI for a single utterance
 ├── tests/test_schema_and_prompt.py # Offline unit tests (no MLX required)
+├── ios/                            # SwiftUI demo app (MLX-Swift on-device)
+│   ├── README.md                   # Xcode setup + troubleshooting
+│   └── ExpenseParser/ExpenseParser/
+│       ├── ExpenseParserApp.swift
+│       ├── ContentView.swift
+│       └── Model/                  # Expense.swift, PromptTemplate.swift, ExpenseInference.swift
 ├── Modelfile                       # Ollama deployment template
 ├── requirements.txt
 └── README.md
@@ -90,11 +96,16 @@ pip install -r requirements.txt
 
 ### Hugging Face access
 
-Accept the Gemma license on the Hugging Face model page, then:
+Gemma is a gated repo. Accept the license at
+https://huggingface.co/google/gemma-3-270m while logged into the HF account
+whose token you'll use locally, then:
 
 ```bash
-huggingface-cli login
+hf auth login          # newer CLI; older `huggingface-cli login` still works
+hf download google/gemma-3-270m --revision main config.json   # smoke test
 ```
+
+If the download 403s, the license hasn't been accepted yet on this account.
 
 ### Verify the setup
 
@@ -230,7 +241,11 @@ mlx_lm.fuse \
 ### Convert to GGUF
 
 ```bash
-python /path/to/llama.cpp/convert_hf_to_gguf.py \
+# Clone llama.cpp once (you only need the Python converter, not the C++ build):
+git clone https://github.com/ggml-org/llama.cpp ~/llama.cpp
+pip install -r ~/llama.cpp/requirements.txt
+
+python ~/llama.cpp/convert_hf_to_gguf.py \
   ./models/gemma3-270m-expense-merged \
   --outtype q4_k_m \
   --outfile ./gemma3-270m-expense.gguf
@@ -249,14 +264,28 @@ ollama run gemma3-expense
 
 | Target            | Runtime                                        |
 |-------------------|------------------------------------------------|
-| Mac/iOS app       | MLX directly (see `ios/ExpenseParser/`)        |
+| iOS app           | MLX-Swift (see `ios/` — working SwiftUI demo)  |
 | Android app       | llama.cpp bindings                             |
 | Backend API       | Ollama or MLX server                           |
-| Local desktop app | MLX (best on Mac), llama.cpp (cross-platform)  |
+| Mac desktop       | MLX directly, or llama.cpp via Swift bindings  |
 
-An iOS SwiftUI demo that runs the fused model on-device via MLX-Swift lives in
-`ios/ExpenseParser/` — see `ios/README.md` for Xcode setup. Swift sources are
-tracked; the `.xcodeproj` and bundled model weights are gitignored.
+### iOS app
+
+A SwiftUI demo that runs the fused model on-device via MLX-Swift lives in
+`ios/ExpenseParser/`. Swift sources are tracked; the `.xcodeproj` and bundled
+model weights are gitignored so each developer builds locally.
+
+Quickstart (full details in `ios/README.md`):
+
+1. Fuse the adapter into a merged MLX model (step above), leaving the
+   directory at `models/gemma3-270m-expense-merged/`.
+2. In Xcode, create `ExpenseParser.xcodeproj` inside `ios/ExpenseParser/` if
+   it doesn't already exist; the tracked `.swift` files pick up automatically.
+3. Add the MLX-Swift package (`https://github.com/ml-explore/mlx-swift-examples`)
+   and link products `MLX`, `MLXLLM`, `MLXLMCommon` to the target.
+4. Drag `models/gemma3-270m-expense-merged/` into the Xcode navigator as a
+   **folder reference** (blue folder), "Copy items if needed" on.
+5. Build to a real device.
 
 ### Inference wrapper
 
@@ -300,9 +329,9 @@ Training speed on M4 Max makes this project data-bound rather than compute-bound
 
 ```bash
 pip install -r requirements.txt
-huggingface-cli login
+hf auth login
 
-# 1. Expand dataset
+# 1. Expand dataset (uses the Claude CLI; add --batches-per-category 4 to scale up)
 python scripts/generate_synthetic.py --out data/synthetic/raw.jsonl --per-category 50
 #    ...hand-review data/synthetic/raw.jsonl...
 
@@ -321,6 +350,14 @@ python scripts/evaluate.py
 
 # 6. Predict
 python scripts/predict.py "grabbed lunch at Chipotle for $14"
+
+# 7. Fuse adapter for deployment
+mlx_lm.fuse \
+  --model google/gemma-3-270m \
+  --adapter-path ./adapters/gemma3-270m-expense \
+  --save-path ./models/gemma3-270m-expense-merged
+
+# 8. (optional) Ship to iOS — see ios/README.md
 ```
 
 Offline unit tests (no MLX required): `python -m pytest tests/`.
