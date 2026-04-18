@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Editors
+.vscode/
+.idea/
+.DS_Store
+
+# Experiment artifacts
+adapters/
+models/
+wandb/
+*.safetensors
+*.gguf
+
+# Local data we don't commit
+data/train.jsonl
+data/valid.jsonl
+data/test.jsonl
+data/synthetic/
+
+# Secrets
+.env
+.env.*
+!.env.example

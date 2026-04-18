@@ -1,0 +1,40 @@
+{"input": "spent $15 on coffee at Starbucks", "output": {"amount": 15.00, "currency": "USD", "category": "food_drink", "merchant": "Starbucks", "description": "coffee", "date": "today"}}
+{"input": "grabbed lunch at Chipotle for $14", "output": {"amount": 14.00, "currency": "USD", "category": "food_drink", "merchant": "Chipotle", "description": "lunch", "date": "today"}}
+{"input": "uber home 22", "output": {"amount": 22.00, "currency": "USD", "category": "transport", "merchant": "Uber", "description": "ride home", "date": "today"}}
+{"input": "paid 45 bucks for gas yesterday", "output": {"amount": 45.00, "currency": "USD", "category": "transport", "merchant": null, "description": "gas", "date": "yesterday"}}
+{"input": "Whole Foods groceries 87.42", "output": {"amount": 87.42, "currency": "USD", "category": "groceries", "merchant": "Whole Foods", "description": "groceries", "date": "today"}}
+{"input": "netflix subscription 15.49", "output": {"amount": 15.49, "currency": "USD", "category": "subscriptions", "merchant": "Netflix", "description": "subscription", "date": "today"}}
+{"input": "movie tickets 32 last night", "output": {"amount": 32.00, "currency": "USD", "category": "entertainment", "merchant": null, "description": "movie tickets", "date": "last night"}}
+{"input": "dentist appointment 220", "output": {"amount": 220.00, "currency": "USD", "category": "health", "merchant": null, "description": "dentist appointment", "date": "today"}}
+{"input": "dinner with Sarah 78.50", "output": {"amount": 78.50, "currency": "USD", "category": "food_drink", "merchant": null, "description": "dinner with Sarah", "date": "today"}}
+{"input": "amazon order 54.99", "output": {"amount": 54.99, "currency": "USD", "category": "shopping", "merchant": "Amazon", "description": "order", "date": "today"}}
+{"input": "electric bill $142.30", "output": {"amount": 142.30, "currency": "USD", "category": "bills", "merchant": null, "description": "electric bill", "date": "today"}}
+{"input": "spotify premium 9.99", "output": {"amount": 9.99, "currency": "USD", "category": "subscriptions", "merchant": "Spotify", "description": "premium", "date": "today"}}
+{"input": "lyft to airport 38", "output": {"amount": 38.00, "currency": "USD", "category": "transport", "merchant": "Lyft", "description": "ride to airport", "date": "today"}}
+{"input": "flight to NYC 312 last Tuesday", "output": {"amount": 312.00, "currency": "USD", "category": "travel", "merchant": null, "description": "flight to NYC", "date": "last Tuesday"}}
+{"input": "airbnb for the weekend 245", "output": {"amount": 245.00, "currency": "USD", "category": "travel", "merchant": "Airbnb", "description": "weekend stay", "date": "today"}}
+{"input": "€20 for a pint", "output": {"amount": 20.00, "currency": "EUR", "category": "food_drink", "merchant": null, "description": "pint", "date": "today"}}
+{"input": "¥1200 ramen in Tokyo", "output": {"amount": 1200.00, "currency": "JPY", "category": "food_drink", "merchant": null, "description": "ramen in Tokyo", "date": "today"}}
+{"input": "£3.50 tube ride", "output": {"amount": 3.50, "currency": "GBP", "category": "transport", "merchant": null, "description": "tube ride", "date": "today"}}
+{"input": "fifteen dollars on parking", "output": {"amount": 15.00, "currency": "USD", "category": "transport", "merchant": null, "description": "parking", "date": "today"}}
+{"input": "bought a shirt at Target for 29.99", "output": {"amount": 29.99, "currency": "USD", "category": "shopping", "merchant": "Target", "description": "shirt", "date": "today"}}
+{"input": "coffee 4.75", "output": {"amount": 4.75, "currency": "USD", "category": "food_drink", "merchant": null, "description": "coffee", "date": "today"}}
+{"input": "cvs pharmacy 18.40", "output": {"amount": 18.40, "currency": "USD", "category": "health", "merchant": "CVS", "description": "pharmacy", "date": "today"}}
+{"input": "gym membership 49", "output": {"amount": 49.00, "currency": "USD", "category": "health", "merchant": null, "description": "gym membership", "date": "today"}}
+{"input": "internet bill 65", "output": {"amount": 65.00, "currency": "USD", "category": "bills", "merchant": null, "description": "internet bill", "date": "today"}}
+{"input": "rent 1850 on the first", "output": {"amount": 1850.00, "currency": "USD", "category": "bills", "merchant": null, "description": "rent", "date": "the first"}}
+{"input": "Starbux 6.25 this morning", "output": {"amount": 6.25, "currency": "USD", "category": "food_drink", "merchant": "Starbucks", "description": "coffee", "date": "this morning"}}
+{"input": "sushi dinner 62.80", "output": {"amount": 62.80, "currency": "USD", "category": "food_drink", "merchant": null, "description": "sushi dinner", "date": "today"}}
+{"input": "concert tickets 180 on 2026-03-15", "output": {"amount": 180.00, "currency": "USD", "category": "entertainment", "merchant": null, "description": "concert tickets", "date": "2026-03-15"}}
+{"input": "refund from amazon -19.99", "output": {"amount": -19.99, "currency": "USD", "category": "shopping", "merchant": "Amazon", "description": "refund", "date": "today"}}
+{"input": "icloud 2.99 monthly", "output": {"amount": 2.99, "currency": "USD", "category": "subscriptions", "merchant": "iCloud", "description": "monthly storage", "date": "today"}}
+{"input": "a couple bucks on a soda", "output": {"amount": null, "currency": "USD", "category": "food_drink", "merchant": null, "description": "soda", "date": "today"}}
+{"input": "haircut 35 with tip", "output": {"amount": 35.00, "currency": "USD", "category": "other", "merchant": null, "description": "haircut with tip", "date": "today"}}
+{"input": "split pizza 4 ways, my share 11", "output": {"amount": 11.00, "currency": "USD", "category": "food_drink", "merchant": null, "description": "pizza (split, my share)", "date": "today"}}
+{"input": "McDonald's drive-thru 8.47", "output": {"amount": 8.47, "currency": "USD", "category": "food_drink", "merchant": "McDonald's", "description": "drive-thru", "date": "today"}}
+{"input": "taxi 17 last Friday", "output": {"amount": 17.00, "currency": "USD", "category": "transport", "merchant": null, "description": "taxi", "date": "last Friday"}}
+{"input": "Hulu 7.99", "output": {"amount": 7.99, "currency": "USD", "category": "subscriptions", "merchant": "Hulu", "description": "subscription", "date": "today"}}
+{"input": "Trader Joes run 52.18", "output": {"amount": 52.18, "currency": "USD", "category": "groceries", "merchant": "Trader Joe's", "description": "grocery run", "date": "today"}}
+{"input": "got a book for twelve bucks", "output": {"amount": 12.00, "currency": "USD", "category": "shopping", "merchant": null, "description": "book", "date": "today"}}
+{"input": "museum entry 25 for two", "output": {"amount": 25.00, "currency": "USD", "category": "entertainment", "merchant": null, "description": "museum entry for two", "date": "today"}}
+{"input": "Expedia hotel 410", "output": {"amount": 410.00, "currency": "USD", "category": "travel", "merchant": "Expedia", "description": "hotel", "date": "today"}}

@@ -1,0 +1,11 @@
+FROM ./gemma3-270m-expense.gguf
+
+TEMPLATE """<start_of_turn>user
+{{ .Prompt }}
+<end_of_turn>
+<start_of_turn>model
+"""
+
+PARAMETER stop "<end_of_turn>"
+PARAMETER temperature 0.0
+PARAMETER num_predict 200
