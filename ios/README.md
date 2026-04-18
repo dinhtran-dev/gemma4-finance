@@ -52,23 +52,31 @@ In Xcode: **File → Add Package Dependencies…**
 
 ## 3. Bundle the model
 
-From the repo root, the fused model should live at
-`models/gemma3-270m-expense-merged/`.
+From the repo root, the fused model lives at
+`models/gemma3-270m-expense-merged/`. Copy it into the Xcode source folder:
 
-1. In Finder, drag that **directory** into the Xcode project navigator.
-2. In the dialog, select:
-   - **Create folder references** (blue folder icon — NOT "Create groups")
-   - **Copy items if needed** = on
-   - **Add to target: ExpenseParser**
+```bash
+cp -R models/gemma3-270m-expense-merged \
+      ios/ExpenseParser/ExpenseParser/
+```
 
-This preserves the directory structure so MLX can load it as a single model
-path at runtime. `ExpenseInference` looks for a bundle resource named
-`gemma3-270m-expense-merged` — keep the directory name or update the
-`bundleDirName` argument in `ExpenseParserApp`.
+Xcode's synchronized folders will pick it up automatically — you should see
+`gemma3-270m-expense-merged` appear in the project navigator within a few
+seconds. No drag-and-drop needed, no import dialog.
+
+`ExpenseInference.resolveModelURL` accepts either bundle layout that Xcode
+might produce:
+
+- **Folder reference** — `<bundle>/gemma3-270m-expense-merged/{config.json, …}`
+- **Flattened** (Xcode groups each file individually) —
+  `<bundle>/{config.json, model.safetensors, …}`
+
+So whichever way the auto-sync adds it, the app will find the weights as long
+as `config.json` and `model.safetensors` end up in the bundle.
 
 > Note: the bf16 model is ~540 MB. For smaller app size, regenerate the merged
 > model in a quantized MLX format (`mlx_lm.convert --quantize --q-bits 4 ...`)
-> and bundle that instead. The copied model directory inside
+> and copy that instead. The model directory inside
 > `ios/ExpenseParser/ExpenseParser/` is gitignored.
 
 ## 4. Capabilities & Info.plist
@@ -101,9 +109,11 @@ ios/
 
 ## Troubleshooting
 
-- **"Model bundle not found"** — the model directory wasn't added as a folder
-  reference, or the name doesn't match. Confirm a blue folder icon in the
-  project navigator and that the folder name is `gemma3-270m-expense-merged`.
+- **"Model bundle not found"** — the load-state card prints the full contents
+  of `Bundle.main.resourcePath`. If `config.json` / `model.safetensors` aren't
+  in the listing, the copy didn't make it into the target. Confirm the folder
+  exists on disk at `ios/ExpenseParser/ExpenseParser/gemma3-270m-expense-merged/`
+  and that its files show target membership in Xcode's File Inspector.
 - **Tokenizer load errors** — ensure `tokenizer.json` and
   `tokenizer_config.json` are inside the bundled directory (they should be,
   after `mlx_lm.fuse`).

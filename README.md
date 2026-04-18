@@ -283,8 +283,11 @@ Quickstart (full details in `ios/README.md`):
    it doesn't already exist; the tracked `.swift` files pick up automatically.
 3. Add the MLX-Swift package (`https://github.com/ml-explore/mlx-swift-examples`)
    and link products `MLX`, `MLXLLM`, `MLXLMCommon` to the target.
-4. Drag `models/gemma3-270m-expense-merged/` into the Xcode navigator as a
-   **folder reference** (blue folder), "Copy items if needed" on.
+4. Copy the model into the Xcode source folder — Xcode's synchronized folders
+   will pick it up automatically:
+   ```
+   cp -R models/gemma3-270m-expense-merged ios/ExpenseParser/ExpenseParser/
+   ```
 5. Build to a real device.
 
 ### Inference wrapper
