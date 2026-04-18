@@ -2,7 +2,7 @@ import Foundation
 
 /// Must stay in sync with `src/expense_parser/prompt.py`.
 enum PromptTemplate {
-    static let systemInstruction = """
+    static let systemInstruction: String = """
         Extract expense details as JSON with keys: \
         amount (number or null), currency (ISO code, default USD), \
         category (one of: food_drink, groceries, transport, travel, \
@@ -11,12 +11,12 @@ enum PromptTemplate {
         date (string or null).
         """
 
-    static func userPrompt(_ userText: String) -> String {
+    nonisolated static func userPrompt(_ userText: String) -> String {
         "\(systemInstruction)\nInput: \(userText.trimmingCharacters(in: .whitespacesAndNewlines))"
     }
 
     /// Wraps the user prompt in Gemma chat-template turn markers.
-    static func chat(_ userText: String) -> String {
+    nonisolated static func chat(_ userText: String) -> String {
         let user = userPrompt(userText)
         return "<start_of_turn>user\n\(user)\n<end_of_turn>\n<start_of_turn>model\n"
     }

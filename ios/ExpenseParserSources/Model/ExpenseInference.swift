@@ -41,12 +41,16 @@ actor ExpenseInference {
         let params = GenerateParameters(maxTokens: maxTokens, temperature: 0.0)
 
         return try await container.perform { context in
-            let input = try await context.processor.prepare(input: .init(prompt: prompt))
+            let userInput = UserInput(prompt: prompt)
+            let input = try await context.processor.prepare(input: userInput)
+
+            let didGenerate: ([Int]) -> GenerateDisposition = { _ in .more }
             let result = try MLXLMCommon.generate(
                 input: input,
                 parameters: params,
-                context: context
-            ) { _ in .more }
+                context: context,
+                didGenerate: didGenerate
+            )
             return result.output
         }
     }

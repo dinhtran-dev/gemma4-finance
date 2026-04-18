@@ -70,7 +70,7 @@ struct Expense: Codable, Equatable {
 
 enum ExpenseJSON {
     /// Extracts the first `{...}` block from model output and decodes it.
-    static func parse(_ raw: String) -> Expense? {
+    nonisolated static func parse(_ raw: String) -> Expense? {
         guard let start = raw.firstIndex(of: "{"),
               let end = raw.lastIndex(of: "}"),
               start < end else { return nil }
