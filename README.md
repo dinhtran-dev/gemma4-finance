@@ -249,10 +249,13 @@ ollama run gemma3-expense
 
 | Target            | Runtime                                        |
 |-------------------|------------------------------------------------|
-| Mac/iOS app       | MLX directly, or llama.cpp via Swift bindings  |
+| Mac/iOS app       | MLX directly (see `ios/ExpenseParser/`)        |
 | Android app       | llama.cpp bindings                             |
 | Backend API       | Ollama or MLX server                           |
 | Local desktop app | MLX (best on Mac), llama.cpp (cross-platform)  |
+
+An iOS SwiftUI demo that runs the fused model on-device via MLX-Swift lives in
+`ios/ExpenseParser/` — see that folder's README for Xcode setup.
 
 ### Inference wrapper
 
