@@ -255,9 +255,8 @@ ollama run gemma3-expense
 | Local desktop app | MLX (best on Mac), llama.cpp (cross-platform)  |
 
 An iOS SwiftUI demo that runs the fused model on-device via MLX-Swift lives in
-`ios/ExpenseParserSources/` — see that folder's README for Xcode setup. The
-generated `ios/ExpenseParser/` project is gitignored; each dev creates it once
-and references the checked-in sources.
+`ios/ExpenseParser/` — see `ios/README.md` for Xcode setup. Swift sources are
+tracked; the `.xcodeproj` and bundled model weights are gitignored.
 
 ### Inference wrapper
 
